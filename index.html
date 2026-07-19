@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ফ্রুট ক্রাশ - আলটিমেট আর্নিং এডিশন</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+        margin: 0; padding: 0;
+        background: linear-gradient(#071400, #000904);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        min-height: 100vh; overflow: hidden; color: white;
+    }
+    #top-banner-ad {
+        width: 100%; max-width: 450px; height: 50px;
+        background: rgba(0, 15, 8, 0.95); border-bottom: 2px solid #00ff66;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; z-index: 20;
+    }
+    #game-container {
+        position: relative; width: 100%; max-width: 450px; height: 600px;
+        box-shadow: 0 0 50px rgba(0, 255, 102, 0.2); background: #000b05;
+        overflow: hidden; border-radius: 0 0 20px 20px;
+    }
+    canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 1; }
+    #ui {
+        position: absolute; top: 10px; left: 10px; right: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+        pointer-events: none; z-index: 5;
+    }
+    .ui-box {
+        background: rgba(0, 0, 0, 0.9); padding: 6px 12px; border-radius: 15px;
+        font-size: 13px; font-weight: bold; border: 1.5px solid #00ff66;
+        text-shadow: 0 0 5px #00ff66; display: flex; flex-direction: column; align-items: center;
+    }
+    .screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 11, 5, 0.98); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 20px; z-index: 15;
+    }
+    h1 { font-size: 24px; margin-bottom: 15px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; text-align: center; }
+    .btn {
+        width: 85%; padding: 14px; margin: 8px 0; border: none; border-radius: 50px;
+        font-size: 15px; font-weight: bold; color: black; cursor: pointer; transition: 0.2s;
+    }
+    .btn-income { background: linear-gradient(45deg, #00ff66, #fffb00); }
+    .btn-casual { background: linear-gradient(45deg, #a6a6a6, #ffffff); }
+    .btn-wallet { background: linear-gradient(45deg, #00e0ff, #007fff); color: white; margin-top: 15px; }
+    
+    #pop-up-screen { display: none; text-align: center; z-index: 16; }
+    #wallet-screen { display: none; z-index: 17; }
+    
+    .input-field {
+        width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #00ff66;
+        background: #000; color: #fff; text-align: center; font-size: 16px;
+    }
+</style>
+</head>
+<body>
+
+<div id="top-banner-ad">
+    <div id="banner-ad-container">
+        <span style="font-size:11px; color:#fffb00;">📢 বিজ্ঞাপন লোড হচ্ছে...</span>
+    </div>
+</div>
+
+<div id="game-container">
+    <!-- মেনু স্ক্রিন -->
+    <div id="menu-screen" class="screen">
+        <h1>ফ্রুট ক্রাশ চ্যালেঞ্জ</h1>
+        <button class="btn btn-income" onclick="startMode('INCOME')">🔥 ইনকাম মোড (চরম চ্যালেঞ্জিং)</button>
+        <button class="btn btn-casual" onclick="startMode('CASUAL')">🎮 নন-ইনকাম মোড (সাধারণ)</button>
+        <button class="btn btn-wallet" onclick="openWallet()">💼 উইথড্রো ওয়ালেট</button>
+    </div>
+
+    <!-- ওয়ালেট স্ক্রিন -->
+    <div id="wallet-screen" class="screen">
+        <h1>আপনার ওয়ালেট</h1>
+        <p style="font-size: 18px; margin-bottom: 10px;">মোট জমানো কয়েন: <span id="wallet-coins" style="color:#00ff66;">0</span></p>
+        <p style="font-size: 12px; color: #aaa; text-align: center; width: 85%;">
+            *শর্ত: সর্বনিম্ন ৫,০০০ কয়েন হলে উইথড্রো করতে পারবেন।
+        </p>
+        <input type="text" class="input-field" placeholder="বিকাশ / নগদ নম্বর">
+        <button class="btn btn-income" onclick="processWithdraw()">উইথড্রো রিকোয়েস্ট</button>
+        <button class="btn btn-casual" style="width:50%; padding:8px;" onclick="closeWallet()">ফিরে যান</button>
+    </div>
+
+    <canvas id="canvas" width="450" height="600"></canvas>
+    
+    <div id="ui">
+        <div class="ui-box">স্কোর<span id="score">0</span></div>
+        <div class="ui-box" id="timer-box">সময়<span id="timer">60s</span></div>
+        <div class="ui-box" id="life-box">লাইফ<span id="life">❤❤❤❤❤</span></div>
+        <div class="ui-box">কয়েন<span id="coins">0</span></div>
+    </div>
+
+    <!-- অ্যাড ও গেম ওভার পপ-আপ -->
+    <div id="pop-up-screen" class="screen">
+        <h1 id="pop-title">খেলা শেষ!</h1>
+        <p id="pop-desc" style="font-size: 15px; margin: 15px 0; color:#ff3b30;"></p>
+        <button class="btn btn-income" id="ad-action-btn" onclick="handleAdWatch()">🎬 বিজ্ঞাপন দেখুন</button>
+        <button class="btn btn-casual" id="menu-btn" style="display:none;" onclick="backToMenu()">প্রধান মেনু</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const timerEl = document.getElementById('timer');
+const lifeEl = document.getElementById('life');
+const coinsEl = document.getElementById('coins');
+const popUpScreen = document.getElementById('pop-up-screen');
+const popTitle = document.getElementById('pop-title');
+const popDesc = document.getElementById('pop-desc');
+const adActionBtn = document.getElementById('ad-action-btn');
+
+const BOARD_ROWS = 8;
+const BOARD_COLS = 8;
+const TILE_SIZE = 48;
+const BOARD_OFFSET_X = (450 - (BOARD_COLS * TILE_SIZE)) / 2;
+const BOARD_OFFSET_Y = 120;
+
+let board = [];
+let score = 0;
+let gameTimer = 60;
+let lives = 5;
+let earnedCoins = 0;
+let totalWalletCoins = localStorage.getItem('walletCoins') ? parseInt(localStorage.getItem('walletCoins')) : 0;
+let selectedTile = null;
+let isAnimating = false;
+let gameMode = 'CASUAL'; 
+let gameActive = false;
+let timerInterval = null;
+let matchTimer = 0;
+let reviveCount = 0;
+
+const fruits = [
+    { icon: '🍎', name: 'apple' },
+    { icon: '🍉', name: 'watermelon' }, 
+    { icon: '🍌', name: 'banana' },
+    { icon: '🍕', name: 'pizza' }, 
+    { icon: '🍒', name: 'cherry' },
+    { icon: '🍦', name: 'icecream' } 
+];
+
+function loadBannerAd() {
+    const container = document.getElementById('banner-ad-container');
+    container.innerHTML = `<span style="font-size:11px; color:#fffb00;">📢 [BANNER AD PLACEHOLDER] ACTIVE</span>`; 
+}
+
+function showVideoAd(callback) {
+    gameActive = false;
+    alert("🎬 বিজ্ঞাপন লোড হয়েছে! ৫ সেকেন্ড দেখে এটি বন্ধ করুন।");
+    setTimeout(() => { callback(); }, 1000);
+}
+
+function startMode(mode) {
+    gameMode = mode;
+    score = 0;
+    reviveCount = 0;
+    document.getElementById('menu-screen').style.display = 'none';
+    popUpScreen.style.display = 'none';
+    document.getElementById('menu-btn').style.display = 'none';
+    
+    if (gameMode === 'INCOME') {
+        gameTimer = 45; 
+        lives = 5;
+        earnedCoins = 0;
+        matchTimer = 0;
+        document.getElementById('life-box').style.display = 'flex';
+        document.getElementById('timer-box').style.display = 'flex';
+    } else {
+        gameTimer = 90;
+        lives = 999; 
+        document.getElementById('life-box').style.display = 'none';
+        document.getElementById('timer-box').style.display = 'flex';
+    }
+    
+    updateUI();
+    do { createBoard(); } while (checkMatches().length > 0);
+    
+    gameActive = true;
+    startTimers();
+    loadBannerAd();
+    draw();
+}
+
+function createBoard() {
+    board = [];
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        board[r] = [];
+        for (let c = 0; c < BOARD_COLS; c++) {
+            board[r][c] = Math.floor(Math.random() * fruits.length);
+        }
+    }
+}
+
+function startTimers() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (!gameActive) return;
+        
+        gameTimer--;
+        timerEl.textContent = gameTimer + 's';
+        if (gameTimer <= 0) {
+            triggerGameOver('TIMER_OUT');
+        }
+
+        if (gameMode === 'INCOME') {
+            matchTimer++;
+            if (matchTimer >= 3) {
+                matchTimer = 0;
+                deductLife();
+            }
+        }
+        
+        if (gameMode === 'CASUAL' && gameTimer % 25 === 0) {
+            showVideoAd(() => { gameActive = true; });
+        }
+    }, 1000);
+}
+
+function deductLife() {
+    lives--;
+    updateUI();
+    if (lives <= 0) {
+        triggerGameOver('LIVES_OUT');
+    }
+}
+
+function updateUI() {
+    scoreEl.textContent = score;
+    coinsEl.textContent = earnedCoins;
+    if (gameMode === 'INCOME') {
+        lifeEl.textContent = '❤'.repeat(lives) + '💔'.repeat(5 - lives);
+    } else {
+        lifeEl.textContent = '∞';
+    }
+}
+
+// ফিক্সড ক্যানভাস টাইল ড্রয়িং মেথড (১০০% সব ব্রাউজারে দৃশ্যমান হবে)
+function drawTile(x, y, fruitIndex, isSelected) {
+    const fruit = fruits[fruitIndex];
+    if (!fruit) return;
+    ctx.save();
+    
+    // কার্ড ব্যাকগ্রাউন্ড ড্রয়িং (পিউর হোয়াইট)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+
+    // স্ট্যান্ডার্ড কার্ড বর্ডার
+    ctx.strokeStyle = '#b5c9eb';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+
+    // প্লেয়ার সিলেক্ট করলে লাল বর্ডার হাইলাইট
+    if (isSelected) {
+        ctx.strokeStyle = '#ff3b30';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    }
+    
+    // ইমোজি ড্রয়িং (সাদা কার্ডের ওপর ঝকঝকে স্পষ্ট থাকবে)
+    ctx.font = '32px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fruit.icon, x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+    ctx.restore();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // কার্ডের চারদিকের ডার্ক গ্যাপ ও গ্রিড এরিয়া তৈরি
+    ctx.fillStyle = '#0f2240'; 
+    ctx.fillRect(BOARD_OFFSET_X - 4, BOARD_OFFSET_Y - 4, (BOARD_COLS * TILE_SIZE) + 8, (BOARD_ROWS * TILE_SIZE) + 8);
+
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+            if (board[r][c] !== null) {
+                const x = BOARD_OFFSET_X + c * TILE_SIZE;
+                const y = BOARD_OFFSET_Y + r * TILE_SIZE;
+                const isSelected = selectedTile && selectedTile.r === r && selectedTile.c === c;
+                drawTile(x, y, board[r][c], isSelected);
+            }
+        }
+    }
+}
+
+function checkMatches() {
+    let matches = [];
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS - 2; c++) {
+            let type = board[r][c];
+            if (type !== null && board[r][c+1] === type && board[r][c+2] === type) {
+                matches.push({r: r, c: c}, {r: r+1, c: c}, {r: r+2, c: c}); // ফিক্সড কন্টিনিউয়াস গ্রিড
+                matches.push({r: r, c: c}, {r: r, c: c+1}, {r: r+2, c: c});
+            }
+        }
+    }
+    for (let r = 0; r < BOARD_ROWS - 2; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+            let type = board[r][c];
+            if (type !== null && board[r+1][c] === type && board[r+2][c] === type) {
+                matches.push({r: r, c: c}, {r: r+1, c: c}, {r: r+2, c: c});
+            }
+        }
+    }
+    return matches.filter((v, i, a) => a.findIndex(t => (t.r === v.r && t.c === v.c)) === i);
+}
+
+async function processMatches() {
+    isAnimating = true;
+    let matches = checkMatches();
+    
+    if (matches.length === 0) {
+        isAnimating = false;
+        return;
+    }
+    
+    score += matches.length * 10;
+    if (gameMode === 'INCOME') {
+        earnedCoins += Math.floor(matches.length / 3);
+    }
+    
+    updateUI();
+    matches.forEach(m => { board[m.r][m.c] = null; });
+    draw();
+    await delay(150);
+    
+    for (let c = 0; c < BOARD_COLS; c++) {
+        for (let r = BOARD_ROWS - 1; r >= 0; r--) {
+            if (board[r][c] === null) {
+                for (let k = r - 1; k >= 0; k--) {
+                    if (board[k][c] !== null) {
+                        board[r][c] = board[k][c]; board[k][c] = null;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+            if (board[r][c] === null) {
+                board[r][c] = Math.floor(Math.random() * fruits.length);
+            }
+        }
+    }
+    
+    draw();
+    await delay(180);
+    matchTimer = 0; 
+    await processMatches();
+}
+
+function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function swapTiles(r1, c1, r2, c2) {
+    let temp = board[r1][c1]; board[r1][c1] = board[r2][c2]; board[r2][c2] = temp;
+    draw();
+    await delay(120);
+    
+    let matches = checkMatches();
+    if (matches.length > 0) {
+        await processMatches();
+    } else {
+        board[r2][c2] = board[r1][c1]; board[r1][c1] = temp;
+        draw();
+        if (gameMode === 'INCOME') {
+            deductLife();
+        }
+    }
+}
+
+function handleInput(clientX, clientY) {
+    if (isAnimating || !gameActive) return;
+    const rect = canvas.getBoundingClientRect();
+    const canvasX = (clientX - rect.left) * (canvas.width / rect.width);
+    const canvasY = (clientY - rect.top) * (canvas.height / rect.height);
+    const c = Math.floor((canvasX - BOARD_OFFSET_X) / TILE_SIZE);
+    const r = Math.floor((canvasY - BOARD_OFFSET_Y) / TILE_SIZE);
+    
+    if (r >= 0 && r < BOARD_ROWS && c >= 0 && c < BOARD_COLS) {
+        if (!selectedTile) {
+            selectedTile = {r: r, c: c}; draw();
+        } else {
+            const rowDiff = Math.abs(selectedTile.r - r);
+            const colDiff = Math.abs(selectedTile.c - c);
+            if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
+                let s = selectedTile; selectedTile = null;
+                swapTiles(s.r, s.c, r, c);
+            } else {
+                selectedTile = {r: r, c: c}; draw();
+            }
+        }
+    } else {
+        selectedTile = null; draw();
+    }
+}
+
+canvas.addEventListener('mousedown', (e) => handleInput(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', (e) => {
+    if(e.touches.length > 0) handleInput(e.touches[0].clientX, e.touches[0].clientY);
+});
+
+function triggerGameOver(type) {
+    gameActive = false;
+    clearInterval(timerInterval);
+    popUpScreen.style.display = 'flex';
+    
+    if (gameMode === 'CASUAL') {
+        popTitle.innerText = "গেম ওভার!";
+        popDesc.innerText = "স্কোর: " + score;
+        adActionBtn.innerText = "🎬 বিজ্ঞাপন দেখে মেনুতে যান";
+        document.getElementById('menu-btn').style.display = 'block';
+        return;
+    }
+
+    if (type === 'LIVES_OUT') {
+        popTitle.innerText = "লাইফ শেষ! 💔";
+        popDesc.innerText = "৫-১০ সেকেন্ডের স্পনসর বিজ্ঞাপনটি দেখুন।";
+        adActionBtn.innerText = "🎬 ভিডিও দেখে ৫টি লাইফ নিন";
+    } else if (type === 'TIMER_OUT') {
+        popTitle.innerText = "সময় শেষ! ⏰";
+        popDesc.innerText = "বিজ্ঞাপন দেখে এক্সট্রা টাইম ক্লেম করুন।";
+        adActionBtn.innerText = "🎬 স্পনসর ভিডিও দেখুন";
+    }
+}
+
+function handleAdWatch() {
+    showVideoAd(() => {
+        if (gameMode === 'CASUAL') {
+            backToMenu();
+            return;
+        }
+
+        totalWalletCoins += earnedCoins;
+        earnedCoins = 0;
+        localStorage.setItem('walletCoins', totalWalletCoins);
+        
+        if (lives <= 0) {
+            lives = 5;
+            updateUI();
+            popUpScreen.style.display = 'none';
+            gameActive = true;
+            startTimers();
+        } else {
+            gameTimer = 45;
+            updateUI();
+            popUpScreen.style.display = 'none';
+            gameActive = true;
+            startTimers();
+        }
+        draw();
+    });
+}
+
+function openWallet() {
+    document.getElementById('wallet-coins').innerText = totalWalletCoins;
+    document.getElementById('wallet-screen').style.display = 'flex';
+}
+function closeWallet() { document.getElementById('wallet-screen').style.display = 'none'; }
+function processWithdraw() {
+    if (totalWalletCoins < 5000) { alert("❌ সর্বনিম্ন ৫,০০০ কয়েন প্রয়োজন।"); } 
+    else { alert("✅ রিকোয়েস্ট সফল!"); totalWalletCoins -= 5000; localStorage.setItem('walletCoins', totalWalletCoins); openWallet(); }
+}
+function backToMenu() { popUpScreen.style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
+backToMenu();
+</script>
+</body>
+</html>
