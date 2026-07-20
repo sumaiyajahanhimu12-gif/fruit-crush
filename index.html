@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-   <meta name="monetag" content="9df2629a1bd6e341b11e35caf851dfb1">
+<meta name="monetag" content="9df2629a1bd6e341b11e35caf851dfb1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ফ্রুট ক্রাশ - আলটিমেট আর্নিং এডিশন</title>
 <style>
@@ -242,29 +242,24 @@ function updateUI() {
     }
 }
 
-// ফিক্সড ক্যানভাস টাইল ড্রয়িং মেথড (১০০% সব ব্রাউজারে দৃশ্যমান হবে)
 function drawTile(x, y, fruitIndex, isSelected) {
     const fruit = fruits[fruitIndex];
     if (!fruit) return;
     ctx.save();
     
-    // কার্ড ব্যাকগ্রাউন্ড ড্রয়িং (পিউর হোয়াইট)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
 
-    // স্ট্যান্ডার্ড কার্ড বর্ডার
     ctx.strokeStyle = '#b5c9eb';
     ctx.lineWidth = 2;
     ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
 
-    // প্লেয়ার সিলেক্ট করলে লাল বর্ডার হাইলাইট
     if (isSelected) {
         ctx.strokeStyle = '#ff3b30';
         ctx.lineWidth = 3;
         ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
     }
     
-    // ইমোজি ড্রয়িং (সাদা কার্ডের ওপর ঝকঝকে স্পষ্ট থাকবে)
     ctx.font = '32px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -275,7 +270,6 @@ function drawTile(x, y, fruitIndex, isSelected) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // কার্ডের চারদিকের ডার্ক গ্যাপ ও গ্রিড এরিয়া তৈরি
     ctx.fillStyle = '#0f2240'; 
     ctx.fillRect(BOARD_OFFSET_X - 4, BOARD_OFFSET_Y - 4, (BOARD_COLS * TILE_SIZE) + 8, (BOARD_ROWS * TILE_SIZE) + 8);
 
@@ -297,7 +291,7 @@ function checkMatches() {
         for (let c = 0; c < BOARD_COLS - 2; c++) {
             let type = board[r][c];
             if (type !== null && board[r][c+1] === type && board[r][c+2] === type) {
-                matches.push({r: r, c: c}, {r: r+1, c: c}, {r: r+2, c: c}); // ফিক্সড কন্টিনিউয়াস গ্রিড
+                matches.push({r: r, c: c}, {r: r+1, c: c}, {r: r+2, c: c});
                 matches.push({r: r, c: c}, {r: r, c: c+1}, {r: r+2, c: c});
             }
         }
